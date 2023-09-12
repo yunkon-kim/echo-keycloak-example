@@ -1,0 +1,9 @@
+
+# ignore configs
+config-*
+
+# ignore vscode
+.vscode
+
+# ignore logs
+*.log
