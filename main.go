@@ -17,7 +17,6 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/spf13/viper"
-	"github.com/yunkon-kim/echo-keycloak-example/pkg/enums"
 	"go.uber.org/zap"
 )
 
@@ -58,10 +57,10 @@ func accessible(c echo.Context) error {
 // restricted is the handler for the restricted group.
 func restricted(c echo.Context) error {
 	slog.Debug("restricted start")
-	user := c.Get("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
+	token := c.Get("user").(*jwt.Token)
+	claims := token.Claims.(jwt.MapClaims)
 
-	slog.Debugf("Claims from JWT Token Print claims in-detail, format 'key: value'")
+	// slog.Debugf("Claims from JWT Token Print claims in-detail, format 'key: value'")
 
 	name := claims["name"].(string)
 
@@ -113,22 +112,30 @@ func retrospectToken(c echo.Context) {
 	var clientSecret = viper.GetString("keycloak.clientSecret")
 	var realm = viper.GetString("keycloak.realm")
 
-	user := c.Get("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
-
-	var ctx = c.Request().Context()
-	c.Set(fmt.Sprint(enums.ContextKeyClaims), claims)
-
-	client := gocloak.NewClient(baseUrl)
-	token, err := client.LoginClient(ctx, clientID, clientSecret, realm)
-	if err != nil {
-		c.String(http.StatusUnauthorized, "Keycloak login failed:"+err.Error())
+	token, ok := c.Get("user").(*jwt.Token) // by default token is stored under `user` key
+	if !ok {
+		c.String(http.StatusUnauthorized, "JWT token missing or invalid")
+	}
+	claims, ok := token.Claims.(jwt.MapClaims) // by default claims is of type `jwt.MapClaims`
+	if !ok {
+		c.String(http.StatusUnauthorized, "failed to cast claims as jwt.MapClaims")
 	}
 
-	rptResult, err := client.RetrospectToken(ctx, token.AccessToken, clientID, clientSecret, realm)
+	// slog.Debugf("token:", token)
+	slog.Debugf("token.Raw:", token.Raw)
+	slog.Debugf("claims:", claims)
+
+	var ctx = c.Request().Context()
+	// c.Set(fmt.Sprint(enums.ContextKeyClaims), claims)
+
+	client := gocloak.NewClient(baseUrl)
+
+	rptResult, err := client.RetrospectToken(ctx, token.Raw, clientID, clientSecret, realm)
 	if err != nil {
 		c.String(http.StatusUnauthorized, "Inspection failed:"+err.Error())
 	}
+
+	slog.Debugf("rptResult:", rptResult)
 
 	if !*rptResult.Active {
 		c.String(http.StatusUnauthorized, "Token is not active")
