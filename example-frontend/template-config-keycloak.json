@@ -1,0 +1,13 @@
+{
+    "keycloak": {
+        "enabled": true,
+        "realm": "your realm",
+        "clientId": "your client ID",
+        "clientSecret": "your client secret",
+        "baseUrl": "http://localhost:8080",
+        "realmRS256PublicKey": "your realm RS256 public key",
+        "authURL": "http://{your_domain}/realms/{your_realm}/protocol/openid-connect/auth",
+        "tokenURL": "http://{your_domain}/realms/{your_realm}/protocol/openid-connect/token",
+        "redirectURL": "http://localhost:3000/auth/callback"
+    }
+}
