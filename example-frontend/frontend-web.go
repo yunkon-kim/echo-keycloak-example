@@ -81,7 +81,7 @@ func init() {
 
 }
 
-// initViper initializes viper configuration
+// initViper initializes viper configuration.
 func initViper() {
 	viper.SetConfigName("config-keycloak") // name of config file (without extension)
 	viper.SetConfigType("json")            // REQUIRED if the config file does not have the extension in the name
@@ -99,17 +99,17 @@ func initViper() {
 	slog.Debugf("viper config initialized")
 }
 
-// TemplateRenderer is a custom html/template renderer for Echo framework
+// TemplateRenderer is a custom html/template renderer for Echo framework.
 type TemplateRenderer struct {
 	templates *template.Template
 }
 
-// Render renders a template document
+// Render renders a template document.
 func (t *TemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
-// Exists returns whether the given file or directory exists or not
+// Exists returns whether the given file or directory exists or not.
 func Exists(filename string) bool {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
@@ -118,7 +118,7 @@ func Exists(filename string) bool {
 	return !info.IsDir()
 }
 
-// parseKeycloakRSAPublicKey parses the RSA public key from the base64 string
+// parseKeycloakRSAPublicKey parses the RSA public key from the base64 string.
 func parseKeycloakRSAPublicKey(base64Str string) (*rsa.PublicKey, error) {
 	buf, err := base64.StdEncoding.DecodeString(base64Str)
 	if err != nil {
@@ -135,7 +135,7 @@ func parseKeycloakRSAPublicKey(base64Str string) (*rsa.PublicKey, error) {
 	return nil, fmt.Errorf("unexpected key type %T", publicKey)
 }
 
-// getKey returns the public key for verifying the JWT token
+// getKey returns the public key for verifying the JWT token.
 func getKey(token *jwt.Token) (interface{}, error) {
 
 	base64Str := viper.GetString("keycloak.realmRS256PublicKey")
@@ -151,7 +151,7 @@ func getKey(token *jwt.Token) (interface{}, error) {
 	return pubkey, nil
 }
 
-// Middlewares is the struct for middlewares
+// Middlewares is the struct for middlewares.
 type Middlewares struct {
 }
 
@@ -167,7 +167,7 @@ func (m *Middlewares) checkSession(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-// Handlers is the struct for handlers
+// Handlers is the struct for handlers.
 type Handlers struct {
 }
 
@@ -182,8 +182,6 @@ func (h *Handlers) main(c echo.Context) error {
 func (h *Handlers) loginKeycloak(c echo.Context) error {
 
 	url := keycloakOauthConfig.AuthCodeURL(oauthStateString)
-	//	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
-	//
 	return c.Redirect(http.StatusMovedPermanently, url)
 }
 
@@ -216,6 +214,10 @@ func (h *Handlers) authCallback(c echo.Context) error {
 
 	// Set session
 	sess, _ := session.Get("session", c)
+
+	// Options stores configuration for a session or session store.
+	// Fields are a subset of http.Cookie fields.
+	// https://pkg.go.dev/github.com/gorilla/sessions@v1.2.1#Options
 	sess.Options = &sessions.Options{
 		Path:     "/",
 		MaxAge:   86400 * 7,
@@ -257,7 +259,6 @@ func main() {
 		projectPath := strings.TrimSpace(string(path))
 		webPath = filepath.Join(projectPath, "web")
 	}
-
 	slog.Debugf("webPath: ", webPath)
 	slog.Debug("Start - Echo framework")
 	e := echo.New()
@@ -282,8 +283,9 @@ func main() {
 	e.GET("/auth", handlers.loginKeycloak)
 	e.GET("/auth/callback", handlers.authCallback)
 
-	e.Use(middlewares.checkSession)
-	e.GET("/main", handlers.main)
+	g := e.Group("/main")
+	g.Use(middlewares.checkSession)
+	g.GET("", handlers.main)
 
 	e.Logger.Fatal(e.Start(":3000"))
 }

@@ -83,7 +83,7 @@ func parseKeycloakRSAPublicKey(base64Str string) (*rsa.PublicKey, error) {
 	return nil, fmt.Errorf("unexpected key type %T", publicKey)
 }
 
-// getKey is the KeyFunc for the JWT middleware.
+// getKey is the KeyFunc for the JWT middleware to supply the key for verification.
 func getKey(token *jwt.Token) (interface{}, error) {
 
 	base64Str := viper.GetString("keycloak.realmRS256PublicKey")
